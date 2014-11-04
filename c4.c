@@ -1,6 +1,6 @@
 // c4.c - C in four functions
 
-// char, int, and pointer types
+// char, long, and pointer types
 // if, while, return, and expression statements
 // just enough features to allow self-compilation and a bit more
 
@@ -13,7 +13,7 @@
 char *p, *lp, // current position in source code
      *data;   // data/bss pointer
 
-int *e, *le,  // current position in emitted code
+long *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
     *sym,     // symbol table (list of identifiers)
     tk,       // current token
@@ -42,7 +42,7 @@ enum { CHAR, INT, PTR };
 // identifier structure offsets
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
   while (1) {
@@ -75,7 +75,7 @@ next()
         if (tk == id[Hash] && !memcmp((char *)id[Name], pp, p - pp)) { tk = id[Tk]; return; }
         id = id + Idsz;
       }
-      id[Name] = (int)pp;
+      id[Name] = (long)pp;
       id[Hash] = tk;
       tk = id[Tk] = Id;
       return;
@@ -104,7 +104,7 @@ next()
         if (tk == '"') *data++ = ival;
       }
       ++p;
-      if (tk == '"') ival = (int)pp; else tk = Num;
+      if (tk == '"') ival = (long)pp; else tk = Num;
       return;
     }
     else if (tk == '=') { if (*p == '=') { ++p; tk = Eq; } else tk = Assign; return; }
@@ -124,16 +124,16 @@ next()
   }
 }
 
-expr(int lev)
+long expr(long lev)
 {
-  int t, *d;
+  long t, *d;
 
   if (!tk) { printf("%d: unexpected eof in expression", line); exit(-1); }
   else if (tk == Num) { *++e = IMM; *++e = ival; next(); ty = INT; }
   else if (tk == '"') {
     *++e = IMM; *++e = ival; next();
     while (tk == '"') next();
-    data = (char *)((int)data + 4 & -4); ty = PTR;
+    data = (char *)((long)data + 4 & -4); ty = PTR;
   }
   else if (tk == Id) {
     d = id; next();
@@ -212,12 +212,12 @@ expr(int lev)
       *++e = BZ; d = ++e;
       expr(Assign);
       if (tk == ':') next(); else { printf("%d: conditional missing colon\n", line); exit(-1); }
-      *d = (int)(e + 3); *++e = JMP; d = ++e;
+      *d = (long)(e + 3); *++e = JMP; d = ++e;
       expr(Cond);
-      *d = (int)(e + 1);
+      *d = (long)(e + 1);
     }
-    else if (tk == Lor) { next(); *++e = BNZ; d = ++e; expr(Lan); *d = (int)(e + 1); ty = INT; }
-    else if (tk == Lan) { next(); *++e = BZ;  d = ++e; expr(Or);  *d = (int)(e + 1); ty = INT; }
+    else if (tk == Lor) { next(); *++e = BNZ; d = ++e; expr(Lan); *d = (long)(e + 1); ty = INT; }
+    else if (tk == Lan) { next(); *++e = BZ;  d = ++e; expr(Or);  *d = (long)(e + 1); ty = INT; }
     else if (tk == Or)  { next(); *++e = PSH; expr(Xor); *++e = OR;  ty = INT; }
     else if (tk == Xor) { next(); *++e = PSH; expr(And); *++e = XOR; ty = INT; }
     else if (tk == And) { next(); *++e = PSH; expr(Eq);  *++e = AND; ty = INT; }
@@ -265,9 +265,9 @@ expr(int lev)
   }
 }
 
-stmt()
+long stmt()
 {
-  int *a, *b;
+  long *a, *b;
   if (tk == If) {
     next();
     if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }  
@@ -276,11 +276,11 @@ stmt()
     *++e = BZ; b = ++e;
     stmt();
     if (tk == Else) {
-      *b = (int)(e + 3); *++e = JMP; b = ++e;
+      *b = (long)(e + 3); *++e = JMP; b = ++e;
       next();
       stmt();
     }
-    *b = (int)(e + 1);
+    *b = (long)(e + 1);
   } else if (tk == While) {
     next();
     a = e + 1;
@@ -289,8 +289,8 @@ stmt()
     if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }  
     *++e = BZ; b = ++e;
     stmt();
-    *++e = JMP; *++e = (int)a;
-    *b = (int)(e + 1);
+    *++e = JMP; *++e = (long)a;
+    *b = (long)(e + 1);
   } else if (tk == Return) {
     next();
     if (tk != ';') expr(Assign);
@@ -308,9 +308,9 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-  int i, fd, t, bt, *d, cycle, poolsz, *idmain, *pc, *sp, *bp, a;
+  long i, fd, t, bt, *d, cycle, poolsz, *idmain, *pc, *sp, *bp, a;
   
   --argc; ++argv;
   if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
@@ -329,7 +329,7 @@ main(int argc, char **argv)
   memset(e,    0, poolsz);
   memset(data, 0, poolsz);
 
-  p = "char else enum if int return while "
+  p = "char else enum if long return while "
       "open read close printf malloc memset memcmp exit main";
   i = Char; while (i <= While) { next(); id[Tk] = i++; } // add keywords to symbol table
   i = OPEN; while (i <= EXIT) { next(); id[Class] = Sys; id[Type] = INT; id[Val] = i++; } // add library to symbol table
@@ -378,7 +378,7 @@ main(int argc, char **argv)
       d[Type] = t;
       if (tk == '(') {
         d[Class] = Fun;
-        d[Val] = (int)(e + 1);
+        d[Val] = (long)(e + 1);
         next(); i = 0;
         while (tk != 0 && tk != ')') {
           t = INT;
@@ -426,7 +426,7 @@ main(int argc, char **argv)
         }
       } else {
         d[Class] = Glo;
-        d[Val] = (int)data;
+        d[Val] = (long)data;
         data = data + 4;
       }
       if (tk == ',') next();
@@ -434,15 +434,15 @@ main(int argc, char **argv)
     next();
   }
 
-  if (!(pc = (int *)idmain[Val])) { printf("main() not defined\n"); return -1; }
+  if (!(pc = (long *)idmain[Val])) { printf("main() not defined\n"); return -1; }
   if (src) return 0;
 
   // setup stack
-  sp = (int *)((int)sp + poolsz);
+  sp = (long *)((long)sp + poolsz);
   *--sp = EXIT; // call exit if main returns
-  *--sp = PSH; i = (int)sp;
+  *--sp = PSH; i = (long)sp;
   *--sp = argc;
-  *--sp = (int)argv;
+  *--sp = (long)argv;
   *--sp = i;
 
   // run...
@@ -456,18 +456,18 @@ main(int argc, char **argv)
         "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT," + i * 5);
       if (i <= ADJ) printf(" %d\n", *pc); else printf("\n"); 
     }                    
-    if      (i == LEA) a = (int)(bp + *pc++);                             // load local address
+    if      (i == LEA) a = (long)(bp + *pc++);                             // load local address
     else if (i == IMM) a = *pc++;                                         // load global address or immediate
-    else if (i == JMP) pc = (int *)(*pc);                                 // jump
-    else if (i == JSR) { *--sp = (int)(pc + 1); pc = (int *)*pc; }        // jump to subroutine
-    else if (i == BZ)  pc = a ? pc + 1 : (int *)*pc;                      // branch if zero
-    else if (i == BNZ) pc = a ? (int *)*pc : pc + 1;                      // branch if not zero
-    else if (i == ENT) { *--sp = (int)bp; bp = sp; sp = sp - *pc++; }     // enter subroutine
+    else if (i == JMP) pc = (long *)(*pc);                                 // jump
+    else if (i == JSR) { *--sp = (long)(pc + 1); pc = (long *)*pc; }        // jump to subroutine
+    else if (i == BZ)  pc = a ? pc + 1 : (long *)*pc;                      // branch if zero
+    else if (i == BNZ) pc = a ? (long *)*pc : pc + 1;                      // branch if not zero
+    else if (i == ENT) { *--sp = (long)bp; bp = sp; sp = sp - *pc++; }     // enter subroutine
     else if (i == ADJ) sp = sp + *pc++;                                   // stack adjust
-    else if (i == LEV) { sp = bp; bp = (int *)*sp++; pc = (int *)*sp++; } // leave subroutine
-    else if (i == LI)  a = *(int *)a;                                     // load int
+    else if (i == LEV) { sp = bp; bp = (long *)*sp++; pc = (long *)*sp++; } // leave subroutine
+    else if (i == LI)  a = *(long *)a;                                     // load long
     else if (i == LC)  a = *(char *)a;                                    // load char
-    else if (i == SI)  *(int *)*sp++ = a;                                 // store int
+    else if (i == SI)  *(long *)*sp++ = a;                                 // store long
     else if (i == SC)  *(char *)*sp++ = a = a<<24>>24;                    // store char
     else if (i == PSH) *--sp = a;                                         // push
 
@@ -492,8 +492,8 @@ main(int argc, char **argv)
     else if (i == READ) a = read(sp[2], (char *)sp[1], *sp);
     else if (i == CLOS) a = close(*sp);
     else if (i == PRTF) { d = sp + pc[1]; a = printf((char *)d[-1], d[-2], d[-3], d[-4], d[-5], d[-6]); }
-    else if (i == MALC) a = (int)malloc(*sp);
-    else if (i == MSET) a = (int)memset((char *)sp[2], sp[1], *sp);
+    else if (i == MALC) a = (long)malloc(*sp);
+    else if (i == MSET) a = (long)memset((char *)sp[2], sp[1], *sp);
     else if (i == MCMP) a = memcmp((char *)sp[2], (char *)sp[1], *sp);
     else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
     else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
