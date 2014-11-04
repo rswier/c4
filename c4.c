@@ -124,7 +124,7 @@ void next()
   }
 }
 
-expr(int lev)
+int expr(int lev)
 {
   int t, *d;
 
@@ -265,7 +265,7 @@ expr(int lev)
   }
 }
 
-stmt()
+void stmt()
 {
   int *a, *b;
   if (tk == If) {
@@ -308,7 +308,7 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int i, fd, t, bt, *d, cycle, poolsz, *idmain, *pc, *sp, *bp, a;
   
@@ -498,4 +498,6 @@ main(int argc, char **argv)
     else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
     else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
   }
+
+  return EXIT_SUCCESS;
 }
