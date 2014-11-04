@@ -11,7 +11,3 @@ Try the following:
     
     ./c4 c4.c hello.c
     ./c4 c4.c c4.c hello.c
-
-Robert Swierczek
-Email: rswier AT acm DOT org
-November 2014
