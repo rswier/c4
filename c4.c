@@ -42,7 +42,7 @@ enum { CHAR, INT, PTR };
 // identifier structure offsets
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
   while (1) {
