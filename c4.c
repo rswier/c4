@@ -42,7 +42,7 @@ enum { CHAR, INT, PTR };
 // identifier structure offsets
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
   while (1) {
@@ -124,7 +124,7 @@ next()
   }
 }
 
-expr(int lev)
+int expr(int lev)
 {
   int t, *d;
 
@@ -265,7 +265,7 @@ expr(int lev)
   }
 }
 
-stmt()
+int stmt()
 {
   int *a, *b;
   if (tk == If) {
@@ -308,7 +308,7 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int i, fd, t, bt, *d, cycle, poolsz, *idmain, *pc, *sp, *bp, a;
   
