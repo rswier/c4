@@ -183,10 +183,11 @@ expr(int lev)
   }
   else if (tk == '!') { next(); expr(Inc); *++e = PSH; *++e = IMM; *++e = 0; *++e = EQ; ty = INT; }
   else if (tk == '~') { next(); expr(Inc); *++e = PSH; *++e = IMM; *++e = -1; *++e = XOR; ty = INT; }
-  else if (tk == Add) { next(); expr(Inc); }
+  else if (tk == Add) { next(); expr(Inc); ty = INT; }
   else if (tk == Sub) {
     next(); *++e = IMM;
     if (tk == Num) { *++e = -ival; next(); } else { *++e = -1; *++e = PSH; expr(Inc); *++e = MUL; }
+    ty = INT;
   }
   else if (tk == Inc || tk == Dec) {
     t = tk; next(); expr(Inc);
