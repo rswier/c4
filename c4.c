@@ -57,7 +57,7 @@ next()
           printf("%8.4s", &"LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
                            "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
                            "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,"[*++le * 5]);
-          if (*le <= ADJ) printf(" %d\n", *++le); else printf("\n"); 
+          if (*le <= ADJ) printf(" %d\n", *++le); else printf("\n");
         }
       }
       ++line;
@@ -231,7 +231,7 @@ expr(int lev)
     else if (tk == Shl) { next(); *++e = PSH; expr(Add); *++e = SHL; ty = INT; }
     else if (tk == Shr) { next(); *++e = PSH; expr(Add); *++e = SHR; ty = INT; }
     else if (tk == Add) {
-      next(); *++e = PSH; expr(Mul); 
+      next(); *++e = PSH; expr(Mul);
       if ((ty = t) > PTR) { *++e = PSH; *++e = IMM; *++e = 4; *++e = MUL;  }
       *++e = ADD;
     }
@@ -256,7 +256,7 @@ expr(int lev)
     }
     else if (tk == Brak) {
       next(); *++e = PSH; expr(Assign);
-      if (tk == ']') next(); else { printf("%d: close bracket expected\n", line); exit(-1); }  
+      if (tk == ']') next(); else { printf("%d: close bracket expected\n", line); exit(-1); }
       if (t > PTR) { *++e = PSH; *++e = IMM; *++e = 4; *++e = MUL;  }
       else if (t < PTR) { printf("%d: pointer type expected\n", line); exit(-1); }
       *++e = ADD;
@@ -271,9 +271,9 @@ stmt()
   int *a, *b;
   if (tk == If) {
     next();
-    if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }  
+    if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }
     expr(Assign);
-    if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }  
+    if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }
     *++e = BZ; b = ++e;
     stmt();
     if (tk == Else) {
@@ -285,9 +285,9 @@ stmt()
   } else if (tk == While) {
     next();
     a = e + 1;
-    if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }  
+    if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }
     expr(Assign);
-    if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }  
+    if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }
     *++e = BZ; b = ++e;
     stmt();
     *++e = JMP; *++e = (int)a;
@@ -296,7 +296,7 @@ stmt()
     next();
     if (tk != ';') expr(Assign);
     *++e = LEV;
-    if (tk == ';') next(); else { printf("%d: semicolon expected\n", line); exit(-1); }  
+    if (tk == ';') next(); else { printf("%d: semicolon expected\n", line); exit(-1); }
   } else if (tk == '{') {
     next();
     while (tk != 0 && tk != '}') stmt();
@@ -314,7 +314,7 @@ main(int argc, char **argv)
   int fd, bt, ty, poolsz, *idmain;
   int *pc, *sp, *bp, a, cycle; // vm registers
   int i, *t; // temps
-  
+
   --argc; ++argv;
   if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
   if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') { debug = 1; --argc; ++argv; }
@@ -340,7 +340,7 @@ main(int argc, char **argv)
 
   if (!(lp = p = malloc(poolsz))) { printf("could not malloc(%d) source area\n", poolsz); return -1; }
   if ((i = read(fd, p, poolsz-1)) <= 0) { printf("read() returned %d\n", i); return -1; }
-  p[i] = 0;  
+  p[i] = 0;
   close(fd);
 
   // parse declarations
@@ -419,7 +419,7 @@ main(int argc, char **argv)
         while (tk != 0 && tk != '}') stmt();
         *++e = LEV;
         id = sym; // unwind symbol table locals
-        while (id[Tk]) { 
+        while (id[Tk]) {
           if (id[Class] == Loc) {
             id[Class] = id[HClass];
             id[Type] = id[HType];
@@ -457,8 +457,8 @@ main(int argc, char **argv)
         &"LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
          "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
          "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,"[i * 5]);
-      if (i <= ADJ) printf(" %d\n", *pc); else printf("\n"); 
-    }                    
+      if (i <= ADJ) printf(" %d\n", *pc); else printf("\n");
+    }
     if      (i == LEA) a = (int)(bp + *pc++);                             // load local address
     else if (i == IMM) a = *pc++;                                         // load global address or immediate
     else if (i == JMP) pc = (int *)(*pc);                                 // jump
