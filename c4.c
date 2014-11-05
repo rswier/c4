@@ -15,7 +15,7 @@ char *p, *lp, // current position in source code
 
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed indentifier
-    *sym,     // symbol table (list of identifiers)
+    *sym,     // symbol table (simple list of identifiers)
     tk,       // current token
     ival,     // current token value
     ty,       // current expression type
@@ -39,7 +39,7 @@ enum { LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,
 // types
 enum { CHAR, INT, PTR };
 
-// identifier structure offsets
+// identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
 next()
@@ -311,7 +311,9 @@ stmt()
 
 main(int argc, char **argv)
 {
-  int i, fd, t, bt, *d, cycle, poolsz, *idmain, *pc, *sp, *bp, a;
+  int fd, bt, ty, poolsz, *idmain;
+  int *pc, *sp, *bp, a, cycle; // vm registers
+  int i, *t; // temps
   
   --argc; ++argv;
   if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
@@ -320,7 +322,7 @@ main(int argc, char **argv)
 
   if ((fd = open(*argv, 0)) < 0) { printf("could not open(%s)\n", *argv); return -1; }
 
-  poolsz = 256*1024;
+  poolsz = 256*1024; // arbitrary size
   if (!(sym = malloc(poolsz))) { printf("could not malloc(%d) symbol area\n", poolsz); return -1; }
   if (!(le = e = malloc(poolsz))) { printf("could not malloc(%d) text area\n", poolsz); return -1; }
   if (!(data = malloc(poolsz))) { printf("could not malloc(%d) data area\n", poolsz); return -1; }
@@ -345,7 +347,7 @@ main(int argc, char **argv)
   line = 1;
   next();
   while (tk) {
-    bt = INT;
+    bt = INT; // basetype
     if (tk == Int) next();
     else if (tk == Char) { next(); bt = CHAR; }
     else if (tk == Enum) {
@@ -370,26 +372,25 @@ main(int argc, char **argv)
       }
     }
     while (tk != 0 && tk != ';' && tk != '}') {
-      t = bt;
-      while (tk == Mul) { next(); t = t + PTR; }
+      ty = bt;
+      while (tk == Mul) { next(); ty = ty + PTR; }
       if (tk != Id) { printf("%d: bad global declaration\n", line); return -1; }
       if (id[Class]) { printf("%d: duplicate global definition\n", line); return -1; }
-      d = id;
       next();
-      d[Type] = t;
-      if (tk == '(') {
-        d[Class] = Fun;
-        d[Val] = (int)(e + 1);
+      id[Type] = ty;
+      if (tk == '(') { // function
+        id[Class] = Fun;
+        id[Val] = (int)(e + 1);
         next(); i = 0;
         while (tk != 0 && tk != ')') {
-          t = INT;
+          ty = INT;
           if (tk == Int) next();
-          else if (tk == Char) { next(); t = CHAR; }
-          while (tk == Mul) { next(); t = t + PTR; }
+          else if (tk == Char) { next(); ty = CHAR; }
+          while (tk == Mul) { next(); ty = ty + PTR; }
           if (tk != Id) { printf("%d: bad parameter declaration\n", line); return -1; }
           if (id[Class] == Loc) { printf("%d: duplicate parameter definition\n", line); return -1; }
           id[HClass] = id[Class]; id[Class] = Loc;
-          id[HType]  = id[Type];  id[Type] = t;
+          id[HType]  = id[Type];  id[Type] = ty;
           id[HVal]   = id[Val];   id[Val] = i++;
           next();
           if (tk == ',') next();
@@ -402,22 +403,23 @@ main(int argc, char **argv)
           bt = (tk == Int) ? INT : CHAR;
           next();
           while (tk != 0 && tk != ';') {
-            t = bt;
-            while (tk == Mul) { next(); t = t + PTR; }
+            ty = bt;
+            while (tk == Mul) { next(); ty = ty + PTR; }
             if (tk != Id) { printf("%d: bad local declaration\n", line); return -1; }
             if (id[Class] == Loc) { printf("%d: duplicate local definition\n", line); return -1; }
             id[HClass] = id[Class]; id[Class] = Loc;
-            id[HType]  = id[Type];  id[Type] = t;
+            id[HType]  = id[Type];  id[Type] = ty;
             id[HVal]   = id[Val];   id[Val] = ++i;
             next();
             if (tk == ',') next();
           }
+          next();
         }
         *++e = ENT; *++e = i - loc;
         while (tk != 0 && tk != '}') stmt();
         *++e = LEV;
-        id = sym;
-        while (id[Tk]) {
+        id = sym; // unwind symbol table locals
+        while (id[Tk]) { 
           if (id[Class] == Loc) {
             id[Class] = id[HClass];
             id[Type] = id[HType];
@@ -426,8 +428,8 @@ main(int argc, char **argv)
           id = id + Idsz;
         }
       } else {
-        d[Class] = Glo;
-        d[Val] = (int)data;
+        id[Class] = Glo;
+        id[Val] = (int)data;
         data = data + 4;
       }
       if (tk == ',') next();
@@ -441,10 +443,10 @@ main(int argc, char **argv)
   // setup stack
   sp = (int *)((int)sp + poolsz);
   *--sp = EXIT; // call exit if main returns
-  *--sp = PSH; i = (int)sp;
+  *--sp = PSH; t = sp;
   *--sp = argc;
   *--sp = (int)argv;
-  *--sp = i;
+  *--sp = (int)t;
 
   // run...
   cycle = 0;
@@ -492,7 +494,7 @@ main(int argc, char **argv)
     else if (i == OPEN) a = open(sp[1], (char *)*sp);
     else if (i == READ) a = read(sp[2], (char *)sp[1], *sp);
     else if (i == CLOS) a = close(*sp);
-    else if (i == PRTF) { d = sp + pc[1]; a = printf((char *)d[-1], d[-2], d[-3], d[-4], d[-5], d[-6]); }
+    else if (i == PRTF) { t = sp + pc[1]; a = printf((char *)t[-1], t[-2], t[-3], t[-4], t[-5], t[-6]); }
     else if (i == MALC) a = (int)malloc(*sp);
     else if (i == MSET) a = (int)memset((char *)sp[2], sp[1], *sp);
     else if (i == MCMP) a = memcmp((char *)sp[2], (char *)sp[1], *sp);
