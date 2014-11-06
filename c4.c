@@ -471,7 +471,7 @@ main(int argc, char **argv)
     else if (i == LI)  a = *(int *)a;                                     // load int
     else if (i == LC)  a = *(char *)a;                                    // load char
     else if (i == SI)  *(int *)*sp++ = a;                                 // store int
-    else if (i == SC)  *(char *)*sp++ = a = a<<24>>24;                    // store char
+    else if (i == SC)  a = *(char *)*sp++ = a;                            // store char
     else if (i == PSH) *--sp = a;                                         // push
 
     else if (i == OR)  a = *sp++ |  a;
