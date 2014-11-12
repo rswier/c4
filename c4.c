@@ -140,7 +140,7 @@ expr(int lev)
     if (tk == '(') {
       next();
       t = 0;
-      while (tk != 0 && tk != ')') { expr(Assign); *++e = PSH; ++t; if (tk == ',') next(); }
+      while (tk != ')') { expr(Assign); *++e = PSH; ++t; if (tk == ',') next(); }
       next();
       if (d[Class] == Sys) *++e = d[Val];
       else if (d[Class] == Fun) { *++e = JSR; *++e = d[Val]; }
@@ -416,7 +416,7 @@ main(int argc, char **argv)
           next();
         }
         *++e = ENT; *++e = i - loc;
-        while (tk != 0 && tk != '}') stmt();
+        while (tk != '}') stmt();
         *++e = LEV;
         id = sym; // unwind symbol table locals
         while (id[Tk]) {
