@@ -299,7 +299,7 @@ stmt()
     if (tk == ';') next(); else { printf("%d: semicolon expected\n", line); exit(-1); }
   } else if (tk == '{') {
     next();
-    while (tk != 0 && tk != '}') stmt();
+    while (tk != '}') stmt();
     next();
   } else if (tk == ';') {
     next();
@@ -356,7 +356,7 @@ main(int argc, char **argv)
       if (tk == '{') {
         next();
         i = 0;
-        while (tk != 0 && tk != '}') {
+        while (tk != '}') {
           if (tk != Id) { printf("%d: bad enum identifier %d\n", line, tk); return -1; }
           next();
           if (tk == Assign) {
@@ -371,7 +371,7 @@ main(int argc, char **argv)
         next();
       }
     }
-    while (tk != 0 && tk != ';' && tk != '}') {
+    while (tk != ';' && tk != '}') {
       ty = bt;
       while (tk == Mul) { next(); ty = ty + PTR; }
       if (tk != Id) { printf("%d: bad global declaration\n", line); return -1; }
@@ -382,7 +382,7 @@ main(int argc, char **argv)
         id[Class] = Fun;
         id[Val] = (int)(e + 1);
         next(); i = 0;
-        while (tk != 0 && tk != ')') {
+        while (tk != ')') {
           ty = INT;
           if (tk == Int) next();
           else if (tk == Char) { next(); ty = CHAR; }
@@ -402,7 +402,7 @@ main(int argc, char **argv)
         while (tk == Int || tk == Char) {
           bt = (tk == Int) ? INT : CHAR;
           next();
-          while (tk != 0 && tk != ';') {
+          while (tk != ';') {
             ty = bt;
             while (tk == Mul) { next(); ty = ty + PTR; }
             if (tk != Id) { printf("%d: bad local declaration\n", line); return -1; }
