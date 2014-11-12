@@ -128,7 +128,7 @@ expr(int lev)
 {
   int t, *d;
 
-  if (!tk) { printf("%d: unexpected eof in expression", line); exit(-1); }
+  if (!tk) { printf("%d: unexpected eof in expression\n", line); exit(-1); }
   else if (tk == Num) { *++e = IMM; *++e = ival; next(); ty = INT; }
   else if (tk == '"') {
     *++e = IMM; *++e = ival; next();
@@ -162,7 +162,7 @@ expr(int lev)
     if (tk == Int || tk == Char) {
       t = (tk == Int) ? INT : CHAR; next();
       while (tk == Mul) { next(); t = t + PTR; }
-      if (tk == ')') next(); else { printf("%d: bad cast", line); exit(-1); }
+      if (tk == ')') next(); else { printf("%d: bad cast\n", line); exit(-1); }
       expr(Inc);
       ty = t;
     }
@@ -199,7 +199,7 @@ expr(int lev)
     *++e = (t == Inc) ? ADD : SUB;
     *++e = (ty == CHAR) ? SC : SI;
   }
-  else { printf("%d: bad expression %c\n", line, tk); exit(-1); }
+  else { printf("%d: bad expression\n", line); exit(-1); }
 
   while (tk >= lev) { // "precedence climbing" or "Top Down Operator Precedence" method
     t = ty;
