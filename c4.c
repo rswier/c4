@@ -45,8 +45,7 @@ enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 next()
 {
   char *pp;
-  while (1) {
-    if (!(tk = *p)) return;
+  while (tk = *p) {
     ++p;
     if (tk == '\n')
     {
@@ -147,14 +146,13 @@ expr(int lev)
       else { printf("%d: bad function call\n", line); exit(-1); }
       if (t) { *++e = ADJ; *++e = t; }
       ty = d[Type];
-    } else {
-      if (d[Class] == Num) { *++e = IMM; *++e = d[Val]; ty = INT; }
-      else {
-        if (d[Class] == Loc) { *++e = LEA; *++e = loc - d[Val]; }
-        else if (d[Class] == Glo) { *++e = IMM; *++e = d[Val]; }
-        else { printf("%d: undefined variable\n", line); exit(-1); }
-        *++e = ((ty = d[Type]) == CHAR) ? LC : LI;
-      }
+    }
+    else if (d[Class] == Num) { *++e = IMM; *++e = d[Val]; ty = INT; }
+    else {
+      if (d[Class] == Loc) { *++e = LEA; *++e = loc - d[Val]; }
+      else if (d[Class] == Glo) { *++e = IMM; *++e = d[Val]; }
+      else { printf("%d: undefined variable\n", line); exit(-1); }
+      *++e = ((ty = d[Type]) == CHAR) ? LC : LI;
     }
   }
   else if (tk == '(') {
