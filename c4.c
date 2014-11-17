@@ -467,7 +467,7 @@ main(int argc, char **argv)
     }
     if      (i == LEA) a = (int)(bp + *pc++);                             // load local address
     else if (i == IMM) a = *pc++;                                         // load global address or immediate
-    else if (i == JMP) pc = (int *)(*pc);                                 // jump
+    else if (i == JMP) pc = (int *)*pc;                                   // jump
     else if (i == JSR) { *--sp = (int)(pc + 1); pc = (int *)*pc; }        // jump to subroutine
     else if (i == BZ)  pc = a ? pc + 1 : (int *)*pc;                      // branch if zero
     else if (i == BNZ) pc = a ? (int *)*pc : pc + 1;                      // branch if not zero
