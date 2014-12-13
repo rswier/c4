@@ -6,9 +6,11 @@
 
 // Written by Robert Swierczek
 
+#include <fcntl.h>
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
+#include <unistd.h>
 
 char *p, *lp, // current position in source code
      *data;   // data/bss pointer
@@ -42,7 +44,7 @@ enum { CHAR, INT, PTR };
 // identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
 
@@ -124,7 +126,7 @@ next()
   }
 }
 
-expr(int lev)
+void expr(int lev)
 {
   int t, *d;
 
@@ -265,7 +267,7 @@ expr(int lev)
   }
 }
 
-stmt()
+void stmt()
 {
   int *a, *b;
 
@@ -314,7 +316,7 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int fd, bt, ty, poolsz, *idmain;
   int *pc, *sp, *bp, a, cycle; // vm registers
