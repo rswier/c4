@@ -14,7 +14,7 @@ char *p, *lp, // current position in source code
      *data;   // data/bss pointer
 
 int *e, *le,  // current position in emitted code
-    *id,      // currently parsed indentifier
+    *id,      // currently parsed identifier
     *sym,     // symbol table (simple list of identifiers)
     tk,       // current token
     ival,     // current token value
