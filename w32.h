@@ -24,7 +24,7 @@ void *dlsym(void *handle, char *name)
   if (!strcmp(name, "memcpy")) return &memcpy;
   if (!strcmp(name, "mmap"  )) return &mmap;
   if (!strcmp(name, "dlsym" )) return &dlsym;
-  if (!strcmp(name, "atexit")) return &atexit;
+  if (!strcmp(name, "qsort" )) return &qsort;
   if (!strcmp(name, "exit"  )) return &exit;
   return 0;
 }
