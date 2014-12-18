@@ -1,7 +1,16 @@
-c4 - C in four functions
-========================
+# c4 - C in four functions
 
 An exercise in minimalism.
+
+## Build Status
+
+[![Build Status](https://travis-ci.org/korczis/c4.svg?branch=master)](https://travis-ci.org/korczis/c4)
+
+## Compile
+
+```
+make
+```
 
 Try the following:
 
