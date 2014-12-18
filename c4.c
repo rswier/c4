@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
+#ifdef _WIN32
+#include "w32.h"
+#endif
+#define atexit(x) atexit((void *)x)
 
 char *p, *lp, // current position in source code
      *data;   // data/bss pointer
@@ -34,7 +39,7 @@ enum {
 // opcodes
 enum { LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,
        OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,
-       OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT };
+       OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,MCPY,DSYM,ATEX,EXIT };
 
 // types
 enum { CHAR, INT, PTR };
@@ -55,7 +60,7 @@ next()
         while (le < e) {
           printf("%8.4s", &"LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,"
                            "OR  ,XOR ,AND ,EQ  ,NE  ,LT  ,GT  ,LE  ,GE  ,SHL ,SHR ,ADD ,SUB ,MUL ,DIV ,MOD ,"
-                           "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,EXIT,"[*++le * 5]);
+                           "OPEN,READ,CLOS,PRTF,MALC,MSET,MCMP,MCPY,DSYM,ATEX,EXIT,"[*++le * 5]);
           if (*le <= ADJ) printf(" %d\n", *++le); else printf("\n");
         }
       }
@@ -80,8 +85,12 @@ next()
       return;
     }
     else if (tk >= '0' && tk <= '9') {
-      ival = tk - '0';
-      while (*p >= '0' && *p <= '9') ival = ival * 10 + *p++ - '0';
+      if (ival = tk - '0') { while (*p >= '0' && *p <= '9') ival = ival * 10 + *p++ - '0'; }
+      else if (*p == 'x' || *p == 'X') {
+        while ((tk = *++p) && ((tk >= '0' && tk <= '9') || (tk >= 'a' && tk <= 'f') || (tk >= 'A' && tk <= 'F')))
+          ival = ival * 16 + (tk & 15) + (tk >= 'A' ? 9 : 0);
+      }
+      else { while (*p >= '0' && *p <= '7') ival = ival * 8 + *p++ - '0'; }
       tk = Num;
       return;
     }
@@ -338,7 +347,7 @@ main(int argc, char **argv)
   memset(data, 0, poolsz);
 
   p = "char else enum if int return while "
-      "open read close printf malloc memset memcmp exit main";
+      "open read close printf malloc memset memcmp memcpy dlsym atexit exit main";
   i = Char; while (i <= While) { next(); id[Tk] = i++; } // add keywords to symbol table
   i = OPEN; while (i <= EXIT) { next(); id[Class] = Sys; id[Type] = INT; id[Val] = i++; } // add library to symbol table
   next(); idmain = id; // keep track of main
@@ -504,6 +513,9 @@ main(int argc, char **argv)
     else if (i == MALC) a = (int)malloc(*sp);
     else if (i == MSET) a = (int)memset((char *)sp[2], sp[1], *sp);
     else if (i == MCMP) a = memcmp((char *)sp[2], (char *)sp[1], *sp);
+    else if (i == MCPY) a = (int)memcpy((char *)sp[2], (char *)sp[1], *sp);
+    else if (i == DSYM) a = (int)dlsym((char *)sp[1], (char *)*sp);
+    else if (i == ATEX) a = (int)atexit(*sp);
     else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
     else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
   }
