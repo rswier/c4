@@ -13,7 +13,6 @@
 #ifdef _WIN32
 #include "w32.h"
 #endif
-#define qsort(a,b,c,d) qsort(a,b,c,(void *)d)
 
 char *p, *lp, // current position in source code
      *data;   // data/bss pointer
@@ -47,7 +46,7 @@ enum { CHAR, INT, PTR };
 // identifier offsets (since we can't create an ident struct)
 enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
 
@@ -133,7 +132,7 @@ next()
   }
 }
 
-expr(int lev)
+void expr(int lev)
 {
   int t, *d;
 
@@ -282,7 +281,7 @@ expr(int lev)
   }
 }
 
-stmt()
+void stmt()
 {
   int *a, *b;
 
@@ -331,7 +330,7 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int fd, bt, ty, poolsz, *idmain;
   int *pc, *sp, *bp, a, cycle; // vm registers
@@ -355,9 +354,10 @@ main(int argc, char **argv)
   memset(data, 0, poolsz);
 
   p = "char else enum if int return sizeof while "
-      "open read close printf malloc memset memcmp memcpy mmap dlsym qsort exit main";
+      "open read close printf malloc memset memcmp memcpy mmap dlsym qsort exit void main";
   i = Char; while (i <= While) { next(); id[Tk] = i++; } // add keywords to symbol table
   i = OPEN; while (i <= EXIT) { next(); id[Class] = Sys; id[Type] = INT; id[Val] = i++; } // add library to symbol table
+  next(); id[Tk] = Char; // tolerate void type
   next(); idmain = id; // keep track of main
 
   if (!(lp = p = malloc(poolsz))) { printf("could not malloc(%d) source area\n", poolsz); return -1; }
@@ -524,7 +524,7 @@ main(int argc, char **argv)
     else if (i == MCPY) a = (int)memcpy((char *)sp[2], (char *)sp[1], *sp);
     else if (i == MMAP) a = (int)mmap((char *)sp[5], sp[4], sp[3], sp[2], sp[1], *sp);
     else if (i == DSYM) a = (int)dlsym((char *)sp[1], (char *)*sp);
-    else if (i == QSRT) qsort((char *)sp[3], sp[2], sp[1], *sp);
+    else if (i == QSRT) qsort((char *)sp[3], sp[2], sp[1], (void *)*sp);
     else if (i == EXIT) { printf("exit(%d) cycle = %d\n", *sp, cycle); return *sp; }
     else { printf("unknown instruction = %d! cycle = %d\n", i, cycle); return -1; }
   }

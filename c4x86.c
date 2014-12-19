@@ -16,7 +16,6 @@
 #else
 #include <sys/mman.h>
 #endif
-#define qsort(a,b,c,d) qsort(a,b,c,(void *)d)
 
 char *p, *lp, // current position in source code
      *jitmem, // executable memory for JIT-compiled native code
@@ -55,7 +54,7 @@ enum Ty { CHAR, INT, PTR };
 // identifier offsets (since we can't create an ident struct)
 enum Identifier { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
 
-next()
+void next()
 {
   char *pp;
 
@@ -134,7 +133,7 @@ next()
   }
 }
 
-expr(int lev)
+void expr(int lev)
 {
   int t, *d;
 
@@ -283,7 +282,7 @@ expr(int lev)
   }
 }
 
-stmt()
+void stmt()
 {
   int *a, *b;
 
@@ -332,7 +331,7 @@ stmt()
   }
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int fd, bt, ty, poolsz, *idmain;
   int *pc;
@@ -355,9 +354,10 @@ main(int argc, char **argv)
   memset(data, 0, poolsz);
   
   p = "char else enum if int return sizeof while "
-      "open read close printf malloc memset memcmp memcpy mmap dlsym qsort exit main";
+      "open read close printf malloc memset memcmp memcpy mmap dlsym qsort exit void main";
   i = Char; while (i <= While) { next(); id[Tk] = i++; } // add keywords to symbol table
   i = OPEN; while (i <= EXIT) { next(); id[Class] = Sys; id[Type] = INT; id[Val] = i++; } // add library to symbol table
+  next(); id[Tk] = Char; // handle void type
   next(); idmain = id; // keep track of main
 
   if (!(lp = p = malloc(poolsz))) { printf("could not malloc(%d) source area\n", poolsz); return -1; }
@@ -462,7 +462,6 @@ main(int argc, char **argv)
     }
     next();
   }
-//printf("here\n"); exit(9);
 
   // setup jit memory
 //  jitmem = mmap(0, poolsz, 3, 34, -1, 0);
@@ -569,8 +568,7 @@ main(int argc, char **argv)
     *je++ = 0x83; *je++ = 0xc4; *je++ = 8;                            // add $8, %esp
     *je++ = 0x5e;                                                     // pop %esi
     *je++ = 0xc3;                                                     // ret
-    qsort(sym, 2, 1, tje); // hack to call a function pointer
-//    printf("exit(0) from c4x86\n");
+    qsort(sym, 2, 1, (void *)tje); // hack to call a function pointer
   }
-  return 0; // ????
+  return 0;
 }
