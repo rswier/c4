@@ -249,8 +249,9 @@ void expr(int lev)
     }
     else if (tk == Sub) {
       next(); *++e = PSH; expr(Mul);
-      if ((ty = t) > PTR) { *++e = PSH; *++e = IMM; *++e = sizeof(int); *++e = MUL;  }
-      *++e = SUB;
+      if (t > PTR && t == ty) { *++e = SUB; *++e = PSH; *++e = IMM; *++e = sizeof(int); *++e = DIV; ty = INT; }
+      else if ((ty = t) > PTR) { *++e = PSH; *++e = IMM; *++e = sizeof(int); *++e = MUL; *++e = SUB; }
+      else *++e = SUB;
     }
     else if (tk == Mul) { next(); *++e = PSH; expr(Inc); *++e = MUL; ty = INT; }
     else if (tk == Div) { next(); *++e = PSH; expr(Inc); *++e = DIV; ty = INT; }
