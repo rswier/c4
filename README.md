@@ -1,7 +1,7 @@
 c4 - C in four functions
 ========================
 
-An exercise in minimalism.
+An exercise in minimalism.  **This branch adds switch statement support.**
 
 Try the following:
 
