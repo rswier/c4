@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 char *p, *lp, // current position in source code
      *data;   // data/bss pointer
