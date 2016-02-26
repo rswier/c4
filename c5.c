@@ -8,10 +8,11 @@
 
 // Written by Robert Swierczek
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <unistd.h>
+#include <fcntl.h>
 #ifdef _WIN32
 #include "w32.h"
 #endif
