@@ -18,6 +18,7 @@ char *p, *lp, // current position in source code
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed identifier
     *sym,     // symbol table (simple list of identifiers)
+    *symtop,  // end of symbol table
     tk,       // current token
     ival,     // current token value
     ty,       // current expression type
@@ -42,7 +43,7 @@ enum { LEA ,IMM ,JMP ,JSR ,BZ  ,BNZ ,ENT ,ADJ ,LEV ,LI  ,LC  ,SI  ,SC  ,PSH ,
 enum { CHAR, INT, PTR };
 
 // identifier offsets (since we can't create an ident struct)
-enum { Tk, Hash, Name, Class, Type, Val, HClass, HType, HVal, Idsz };
+enum { Tk, Hash, Name, Class, Type, Val, Idsz };
 
 void next()
 {
@@ -71,13 +72,15 @@ void next()
       while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_')
         tk = tk * 147 + *p++;
       tk = (tk << 6) + (p - pp);
-      id = sym;
-      while (id[Tk]) {
+      id = symtop - Idsz;
+      while (id >= sym) {
         if (tk == id[Hash] && !memcmp((char *)id[Name], pp, p - pp)) { tk = id[Tk]; return; }
-        id = id + Idsz;
+        id = id - Idsz;
       }
+      id = symtop; symtop = symtop + Idsz;
       id[Name] = (int)pp;
       id[Hash] = tk;
+      id[Class] = 0;
       tk = id[Tk] = Id;
       return;
     }
@@ -343,7 +346,7 @@ int main(int argc, char **argv)
   if ((fd = open(*argv, 0)) < 0) { printf("could not open(%s)\n", *argv); return -1; }
 
   poolsz = 256*1024; // arbitrary size
-  if (!(sym = malloc(poolsz))) { printf("could not malloc(%d) symbol area\n", poolsz); return -1; }
+  if (!(symtop = sym = malloc(poolsz))) { printf("could not malloc(%d) symbol area\n", poolsz); return -1; }
   if (!(le = e = malloc(poolsz))) { printf("could not malloc(%d) text area\n", poolsz); return -1; }
   if (!(data = malloc(poolsz))) { printf("could not malloc(%d) data area\n", poolsz); return -1; }
   if (!(sp = malloc(poolsz))) { printf("could not malloc(%d) stack area\n", poolsz); return -1; }
@@ -400,6 +403,7 @@ int main(int argc, char **argv)
       next();
       id[Type] = ty;
       if (tk == '(') { // function
+        t = symtop;
         id[Class] = Fun;
         id[Val] = (int)(e + 1);
         next(); i = 0;
@@ -410,9 +414,9 @@ int main(int argc, char **argv)
           while (tk == Mul) { next(); ty = ty + PTR; }
           if (tk != Id) { printf("%d: bad parameter declaration\n", line); return -1; }
           if (id[Class] == Loc) { printf("%d: duplicate parameter definition\n", line); return -1; }
-          id[HClass] = id[Class]; id[Class] = Loc;
-          id[HType]  = id[Type];  id[Type] = ty;
-          id[HVal]   = id[Val];   id[Val] = i++;
+          id[Class] = Loc;
+          id[Type] = ty;
+          id[Val] = i++;
           next();
           if (tk == ',') next();
         }
@@ -428,9 +432,9 @@ int main(int argc, char **argv)
             while (tk == Mul) { next(); ty = ty + PTR; }
             if (tk != Id) { printf("%d: bad local declaration\n", line); return -1; }
             if (id[Class] == Loc) { printf("%d: duplicate local definition\n", line); return -1; }
-            id[HClass] = id[Class]; id[Class] = Loc;
-            id[HType]  = id[Type];  id[Type] = ty;
-            id[HVal]   = id[Val];   id[Val] = ++i;
+            id[Class] = Loc;
+            id[Type] = ty;
+            id[Val] = ++i;
             next();
             if (tk == ',') next();
           }
@@ -439,15 +443,7 @@ int main(int argc, char **argv)
         *++e = ENT; *++e = i - loc;
         while (tk != '}') stmt();
         *++e = LEV;
-        id = sym; // unwind symbol table locals
-        while (id[Tk]) {
-          if (id[Class] == Loc) {
-            id[Class] = id[HClass];
-            id[Type] = id[HType];
-            id[Val] = id[HVal];
-          }
-          id = id + Idsz;
-        }
+        symtop = t; // unwind symbol table locals
       }
       else {
         id[Class] = Glo;
