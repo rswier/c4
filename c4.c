@@ -17,8 +17,8 @@ char *p, *lp, // current position in source code
 
 int *e, *le,  // current position in emitted code
     *id,      // currently parsed identifier
-    *sym,     // symbol table (simple list of identifiers)
-    *symtop,  // end of symbol table
+    *sym,     // symbol table (stack of identifiers, locals on top)
+    *symtop,  // next empty entry in symbol table
     tk,       // current token
     ival,     // current token value
     ty,       // current expression type
@@ -71,18 +71,16 @@ void next()
       pp = p - 1;
       while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_')
         tk = tk * 147 + *p++;
-      tk = (tk << 6) + (p - pp);
+      symtop[Hash] = ival = (tk << 6) + (p - pp);
+      symtop[Tk] = tk = Id;
       symtop[Name] = (int)pp;
-      symtop[Hash] = tk;
       symtop[Class] = 0;
-      symtop[Tk] = Id;
       id = symtop - Idsz;
       while (id >= sym) {
-        if (tk == id[Hash] && !memcmp((char *)id[Name], pp, p - pp)) { tk = id[Tk]; return; }
+        if (ival == id[Hash] && !memcmp((char *)id[Name], pp, p - pp)) { tk = id[Tk]; return; }
         id = id - Idsz;
       }
       id = symtop; symtop = symtop + Idsz;
-      tk = Id;
       return;
     }
     else if (tk >= '0' && tk <= '9') {
