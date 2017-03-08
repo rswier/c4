@@ -72,16 +72,17 @@ void next()
       while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_')
         tk = tk * 147 + *p++;
       tk = (tk << 6) + (p - pp);
+      symtop[Name] = (int)pp;
+      symtop[Hash] = tk;
+      symtop[Class] = 0;
+      symtop[Tk] = Id;
       id = symtop - Idsz;
       while (id >= sym) {
         if (tk == id[Hash] && !memcmp((char *)id[Name], pp, p - pp)) { tk = id[Tk]; return; }
         id = id - Idsz;
       }
       id = symtop; symtop = symtop + Idsz;
-      id[Name] = (int)pp;
-      id[Hash] = tk;
-      id[Class] = 0;
-      tk = id[Tk] = Id;
+      tk = Id;
       return;
     }
     else if (tk >= '0' && tk <= '9') {
@@ -414,6 +415,7 @@ int main(int argc, char **argv)
           while (tk == Mul) { next(); ty = ty + PTR; }
           if (tk != Id) { printf("%d: bad parameter declaration\n", line); return -1; }
           if (id[Class] == Loc) { printf("%d: duplicate parameter definition\n", line); return -1; }
+          if (id[Class] == Glo) { id = symtop; symtop = symtop + Idsz; }
           id[Class] = Loc;
           id[Type] = ty;
           id[Val] = i++;
@@ -432,6 +434,7 @@ int main(int argc, char **argv)
             while (tk == Mul) { next(); ty = ty + PTR; }
             if (tk != Id) { printf("%d: bad local declaration\n", line); return -1; }
             if (id[Class] == Loc) { printf("%d: duplicate local definition\n", line); return -1; }
+            if (id[Class] == Glo) { id = symtop; symtop = symtop + Idsz; }
             id[Class] = Loc;
             id[Type] = ty;
             id[Val] = ++i;
