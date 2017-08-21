@@ -335,6 +335,8 @@ int main(int argc, char **argv)
   int *pc, *sp, *bp, a, cycle; // vm registers
   int i, *t; // temps
 
+  bp = 0; // avoid undefined behavior
+
   --argc; ++argv;
   if (argc > 0 && **argv == '-' && (*argv)[1] == 's') { src = 1; --argc; ++argv; }
   if (argc > 0 && **argv == '-' && (*argv)[1] == 'd') { debug = 1; --argc; ++argv; }
