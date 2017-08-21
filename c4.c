@@ -472,6 +472,7 @@ int main(int argc, char **argv)
 
   // run...
   cycle = 0;
+  bp = 0;
   while (1) {
     i = *pc++; ++cycle;
     if (debug) {
