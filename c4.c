@@ -463,7 +463,7 @@ int main(int argc, char **argv)
   if (src) return 0;
 
   // setup stack
-  sp = (int *)((int)sp + poolsz);
+  bp = sp = (int *)((int)sp + poolsz);
   *--sp = EXIT; // call exit if main returns
   *--sp = PSH; t = sp;
   *--sp = argc;
