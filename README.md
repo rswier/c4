@@ -1,9 +1,7 @@
-c4 - C in four functions
-========================
-
+#c4 - C in four functions
 An exercise in minimalism.
 
-Try the following:
+##Try the following:
 
     gcc -o c4 c4.c  (you may need the -m32 option on 64bit machines)
     ./c4 hello.c
