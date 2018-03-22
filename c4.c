@@ -22,13 +22,14 @@ int *e, *le,  // current position in emitted code
     ival,     // current token value
     ty,       // current expression type
     loc,      // local variable offset
+    ld,       // local variable depth
     line,     // current line number
     src,      // print source and assembly flag
     debug;    // print executed instructions
 
 // tokens and classes (operators last and in precedence order)
 enum {
-  Num = 128, Fun, Sys, Glo, Loc, Id,
+  Num = 128, Fun, Sys, Glo, Par, Loc, Id,
   Char, Else, Enum, If, Int, Return, Sizeof, While,
   Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
 };
@@ -164,7 +165,7 @@ void expr(int lev)
     }
     else if (d[Class] == Num) { *++e = IMM; *++e = d[Val]; ty = INT; }
     else {
-      if (d[Class] == Loc) { *++e = LEA; *++e = loc - d[Val]; }
+      if (d[Class] == Loc || d[Class] == Par) { *++e = LEA; *++e = loc - d[Val]; }
       else if (d[Class] == Glo) { *++e = IMM; *++e = d[Val]; }
       else { printf("%d: undefined variable\n", line); exit(-1); }
       *++e = ((ty = d[Type]) == CHAR) ? LC : LI;
@@ -280,21 +281,90 @@ void expr(int lev)
   }
 }
 
-void stmt()
+void stmt(int ctx)
 {
+  int bt, ty, i;
   int *a, *b;
 
-  if (tk == If) {
+  if (tk == Enum) {
+    next();
+    if (tk != '{') next();
+    if (tk == '{') {
+      next();
+      i = 0;
+      while (tk != '}') {
+        if (tk != Id) { printf("%d: bad enum identifier %d\n", line, tk); exit(-1); }
+        next();
+        if (tk == Assign) {
+          next();
+          if (tk != Num) { printf("%d: bad enum initializer\n", line); exit(-1); }
+          i = ival;
+          next();
+        }
+        id[Class] = Num; id[Type] = INT; id[Val] = i++;
+        if (tk == ',') next();
+      }
+      next();
+    }
+  }
+  else if (tk == Int || tk == Char) {
+    bt = (tk == Int) ? INT : CHAR; // basetype
+    next();
+    while (tk != ';' && tk != '}' && tk != ',' && tk != ')') {
+      ty = bt;
+      while (tk == Mul) { next(); ty = ty + PTR; }
+      if (tk != Id) { printf("%d: bad declaration\n", line); exit(-1); }
+      if (id[Class] >= ctx) { printf("%d: duplicate definition\n", line); exit(-1); }
+      next();
+      if (tk == '(') { // function
+        if (ctx != Glo) { printf("%d: nested function\n", line); exit(-1); }
+        id[Class] = Fun;
+        id[Val] = (int)(e + 1);
+        id[Type] = ty;
+        next(); ld = 0;
+        while (tk != ')') {
+        stmt(Par);
+          if (tk == ',') next();
+        }
+        next();
+        if (tk != '{') { printf("%d: bad function definition\n", line); exit(-1); }
+        loc = ++ld; ++ld;
+        next();
+        *++e = ENT; a = ++e;
+        while (tk != '}') stmt(Loc);
+        *a = ld - loc - 1;
+        *++e = LEV;
+        id = sym; // unwind symbol table locals
+        while (id[Tk]) {
+          if (id[Class] == Loc || id[Class] == Par) {
+            id[Class] = id[HClass];
+            id[Type] = id[HType];
+            id[Val] = id[HVal];
+          }
+          id = id + Idsz;
+        }
+      }
+      else {
+        id[HClass] = id[Class]; id[Class] = ctx;
+        id[HType]  = id[Type]; id[Type] = ty;
+        id[HVal]   = id[Val];
+        if (ctx == Glo) { id[Val] = (int)data; data = data + sizeof(int); }
+        else { id[Val] = ld++; }
+      }
+      if (ctx != Par && tk == ',') next();
+    }
+  }
+  else if (tk == If) {
     next();
     if (tk == '(') next(); else { printf("%d: open paren expected\n", line); exit(-1); }
     expr(Assign);
     if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }
     *++e = BZ; b = ++e;
-    stmt();
+    stmt(ctx);
     if (tk == Else) {
       *b = (int)(e + 3); *++e = JMP; b = ++e;
       next();
-      stmt();
+      stmt(ctx);
     }
     *b = (int)(e + 1);
   }
@@ -305,7 +375,7 @@ void stmt()
     expr(Assign);
     if (tk == ')') next(); else { printf("%d: close paren expected\n", line); exit(-1); }
     *++e = BZ; b = ++e;
-    stmt();
+    stmt(ctx);
     *++e = JMP; *++e = (int)a;
     *b = (int)(e + 1);
   }
@@ -317,7 +387,7 @@ void stmt()
   }
   else if (tk == '{') {
     next();
-    while (tk != '}') stmt();
+    while (tk != '}') stmt(ctx);
     next();
   }
   else if (tk == ';') {
@@ -364,98 +434,11 @@ int main(int argc, char **argv)
   p[i] = 0;
   close(fd);
 
-  // parse declarations
+  // parse the program
   line = 1;
   next();
   while (tk) {
-    bt = INT; // basetype
-    if (tk == Int) next();
-    else if (tk == Char) { next(); bt = CHAR; }
-    else if (tk == Enum) {
-      next();
-      if (tk != '{') next();
-      if (tk == '{') {
-        next();
-        i = 0;
-        while (tk != '}') {
-          if (tk != Id) { printf("%d: bad enum identifier %d\n", line, tk); return -1; }
-          next();
-          if (tk == Assign) {
-            next();
-            if (tk != Num) { printf("%d: bad enum initializer\n", line); return -1; }
-            i = ival;
-            next();
-          }
-          id[Class] = Num; id[Type] = INT; id[Val] = i++;
-          if (tk == ',') next();
-        }
-        next();
-      }
-    }
-    while (tk != ';' && tk != '}') {
-      ty = bt;
-      while (tk == Mul) { next(); ty = ty + PTR; }
-      if (tk != Id) { printf("%d: bad global declaration\n", line); return -1; }
-      if (id[Class]) { printf("%d: duplicate global definition\n", line); return -1; }
-      next();
-      id[Type] = ty;
-      if (tk == '(') { // function
-        id[Class] = Fun;
-        id[Val] = (int)(e + 1);
-        next(); i = 0;
-        while (tk != ')') {
-          ty = INT;
-          if (tk == Int) next();
-          else if (tk == Char) { next(); ty = CHAR; }
-          while (tk == Mul) { next(); ty = ty + PTR; }
-          if (tk != Id) { printf("%d: bad parameter declaration\n", line); return -1; }
-          if (id[Class] == Loc) { printf("%d: duplicate parameter definition\n", line); return -1; }
-          id[HClass] = id[Class]; id[Class] = Loc;
-          id[HType]  = id[Type];  id[Type] = ty;
-          id[HVal]   = id[Val];   id[Val] = i++;
-          next();
-          if (tk == ',') next();
-        }
-        next();
-        if (tk != '{') { printf("%d: bad function definition\n", line); return -1; }
-        loc = ++i;
-        next();
-        while (tk == Int || tk == Char) {
-          bt = (tk == Int) ? INT : CHAR;
-          next();
-          while (tk != ';') {
-            ty = bt;
-            while (tk == Mul) { next(); ty = ty + PTR; }
-            if (tk != Id) { printf("%d: bad local declaration\n", line); return -1; }
-            if (id[Class] == Loc) { printf("%d: duplicate local definition\n", line); return -1; }
-            id[HClass] = id[Class]; id[Class] = Loc;
-            id[HType]  = id[Type];  id[Type] = ty;
-            id[HVal]   = id[Val];   id[Val] = ++i;
-            next();
-            if (tk == ',') next();
-          }
-          next();
-        }
-        *++e = ENT; *++e = i - loc;
-        while (tk != '}') stmt();
-        *++e = LEV;
-        id = sym; // unwind symbol table locals
-        while (id[Tk]) {
-          if (id[Class] == Loc) {
-            id[Class] = id[HClass];
-            id[Type] = id[HType];
-            id[Val] = id[HVal];
-          }
-          id = id + Idsz;
-        }
-      }
-      else {
-        id[Class] = Glo;
-        id[Val] = (int)data;
-        data = data + sizeof(int);
-      }
-      if (tk == ',') next();
-    }
+    stmt(Glo);
     next();
   }
 
