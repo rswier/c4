@@ -350,6 +350,11 @@ void stmt(int ctx)
         id[HVal]   = id[Val];
         if (ctx == Glo) { id[Val] = (int)data; data = data + sizeof(int); }
         else { id[Val] = ld++; }
+        if (ctx == Loc && tk == Assign) { // initialization
+          *++e = LEA; *++e = loc - id[Val]; *++e = PSH;
+	  next();
+	  expr(Assign); *++e = (ty == CHAR) ? SC : SI;
+	}
       }
       if (ctx != Par && tk == ',') next();
     }
