@@ -9,11 +9,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#ifdef _WIN32
-	#include <io.h>
-#else
+
+// IF COMPILING ON WINDOWS:
+//	#include <io.h>
+// ELSE:
 	#include <unistd.h>
-#endif
+// ENDIF
+
 #include <fcntl.h>
 
 char *p, *lp, // current position in source code
