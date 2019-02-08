@@ -9,7 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <unistd.h>
+#ifdef _WIN32
+	#include <io.h>
+#else
+	#include <unistd.h>
+#endif
 #include <fcntl.h>
 
 char *p, *lp, // current position in source code
