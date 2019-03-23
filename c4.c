@@ -9,7 +9,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <unistd.h>
+
+// IF COMPILING ON WINDOWS:
+//	#include <io.h>
+// ELSE:
+	#include <unistd.h>
+// ENDIF
+
 #include <fcntl.h>
 #define int long long
 
