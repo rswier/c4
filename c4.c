@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #define int long long
 
