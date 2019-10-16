@@ -155,7 +155,11 @@ void expr(int lev)
     if (tk == '(') {
       next();
       t = 0;
-      while (tk != ')') { expr(Assign); *++e = PSH; ++t; if (tk == ',') next(); }
+      while (tk != ')') { 
+        expr(Assign); *++e = PSH; ++t;
+        if (tk == ',') { next(); if(tk == ')') { printf("%d: error unexpected comma in function call\n", line); exit(-1); }}
+        else if(tk != ')') { printf("%d: error missing comma in function call\n", line); exit(-1); }
+      }
       next();
       if (d[Class] == Sys) *++e = d[Val];
       else if (d[Class] == Fun) { *++e = JSR; *++e = d[Val]; }
