@@ -3,7 +3,7 @@ c4 - C in four functions
 
 An exercise in minimalism.
 
-Try the following:
+Try the following-
 
     gcc -o c4 c4.c
     ./c4 hello.c
