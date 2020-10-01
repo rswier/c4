@@ -1,4 +1,4 @@
-c4 - C in four functions
+C4 - it's a C4 function
 ========================
 
 An exercise in minimalism.
