@@ -330,7 +330,9 @@ void stmt()
   }
 }
 
+#undef int
 int main(int argc, char **argv)
+#define int long long
 {
   int fd, bt, ty, poolsz, *idmain;
   int *pc, *sp, *bp, a, cycle; // vm registers
